@@ -1980,7 +1980,8 @@ def err_auto_not_allowed : Error<
   "|in template argument|in typedef|in type alias|in function return type"
   "|in conversion function type|here|in lambda parameter"
   "|in type allocated by 'new'|in K&R-style function parameter"
-  "|in template parameter|in friend declaration}1">;
+  "|in template parameter|in friend declaration"
+  "|in parametric expression parameter}1">;
 def err_dependent_deduced_tst : Error<
   "typename specifier refers to "
   "%select{class template|function template|variable template|alias template|"
@@ -3860,6 +3861,8 @@ def err_bound_member_function : Error<
   "reference to non-static member function must be called"
   "%select{|; did you mean to call it with no arguments?}0">;
 def note_possible_target_of_call : Note<"possible target for call">;
+def err_parametric_expression_id : Error<
+  "reference to parametric expression must be called">;
 
 def err_ovl_no_viable_object_call : Error<
   "no matching function for call to object of type %0">;
@@ -4326,6 +4329,8 @@ def note_template_nsdmi_here : Note<
   "in instantiation of default member initializer %q0 requested here">;
 def note_template_type_alias_instantiation_here : Note<
   "in instantiation of template type alias %0 requested here">;
+def note_parametric_expression_instantiation_here : Note<
+  "in instantiation of parametric expression %0 requested here">;
 def note_template_exception_spec_instantiation_here : Note<
   "in instantiation of exception specification for %0 requested here">;
 def warn_var_template_missing : Warning<"instantiation of variable %q0 "
@@ -4750,6 +4755,23 @@ def ext_redefinition_of_typedef : ExtWarn<
   InGroup<DiagGroup<"typedef-redefinition"> >;
 def err_redefinition_variably_modified_typedef : Error<
   "redefinition of %select{typedef|type alias}0 for variably-modified type %1">;
+
+def err_redefinition_of_parametric_expression : Error<
+  "redefinition of parametric expression %0">;
+def err_parametric_expression_vararg : Error<
+  "C style variadic function ellipsis not allowed in parametric expression declarator">;
+def err_parametric_expression_multiple_parameter_packs : Error<
+  "Parametric expression parameter list may contain only one parameter pack">;
+def err_parametric_expression_requires_constraint : Error<
+  "Parametric expression parameter specifier must be constraint that is auto">;
+def err_parametric_expression_constraint_has_qualifiers : Error<
+  "Parametric expression parameter constraint must not have qualifiers">;
+def err_parametric_expression_arg_list_different_arity : Error<
+  "%select{too few|too many}0 arguments for parametric expression">;
+def err_member_parametric_expression_must_have_self_param : Error<
+  "Non-static member parametric expression must have parameter for object instance">;
+def note_ovl_parametric_expression_candidate : Note<
+    "parametric expression candidate">;
 
 def err_inline_decl_follows_def : Error<
   "inline declaration of %0 follows non-inline definition">;

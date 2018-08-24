@@ -1573,6 +1573,8 @@ DEF_TRAVERSE_DECL(UsingShadowDecl, {})
 
 DEF_TRAVERSE_DECL(ConstructorUsingShadowDecl, {})
 
+DEF_TRAVERSE_DECL(ParametricExpressionDecl, {})
+
 DEF_TRAVERSE_DECL(OMPThreadPrivateDecl, {
   for (auto *I : D->varlists()) {
     TRY_TO(TraverseStmt(I));
@@ -2176,6 +2178,7 @@ DEF_TRAVERSE_STMT(MSDependentExistsStmt, {
 })
 
 DEF_TRAVERSE_STMT(ReturnStmt, {})
+DEF_TRAVERSE_STMT(ParametricExpressionReturnStmt, {})
 DEF_TRAVERSE_STMT(SwitchStmt, {})
 DEF_TRAVERSE_STMT(WhileStmt, {})
 
@@ -2548,6 +2551,10 @@ DEF_TRAVERSE_STMT(FunctionParmPackExpr, {})
 DEF_TRAVERSE_STMT(MaterializeTemporaryExpr, {})
 DEF_TRAVERSE_STMT(CXXFoldExpr, {})
 DEF_TRAVERSE_STMT(AtomicExpr, {})
+DEF_TRAVERSE_STMT(ParametricExpressionIdExpr, {})
+DEF_TRAVERSE_STMT(ParametricExpressionCallExpr, {})
+DEF_TRAVERSE_STMT(DependentParametricExpressionCallExpr, {})
+DEF_TRAVERSE_STMT(ResolvedUnexpandedPackExpr, {})
 
 // For coroutines expressions, traverse either the operand
 // as written or the implied calls, depending on what the

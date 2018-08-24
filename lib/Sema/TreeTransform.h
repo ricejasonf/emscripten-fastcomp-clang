@@ -34,6 +34,7 @@
 #include "clang/Sema/ScopeInfo.h"
 #include "clang/Sema/SemaDiagnostic.h"
 #include "clang/Sema/SemaInternal.h"
+#include "clang/Sema/Template.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/Support/ErrorHandling.h"
 #include <algorithm>
@@ -147,7 +148,10 @@ public:
   /// We must always rebuild all AST nodes when performing variadic template
   /// pack expansion, in order to avoid violating the AST invariant that each
   /// statement node appears at most once in its containing declaration.
-  bool AlwaysRebuild() { return SemaRef.ArgumentPackSubstitutionIndex != -1; }
+  bool AlwaysRebuild() {
+    return SemaRef.ExpandingExprAlias ||
+           SemaRef.ArgumentPackSubstitutionIndex != -1;
+  }
 
   /// \brief Returns the location of the entity being transformed, if that
   /// information was not available elsewhere in the AST.
@@ -1329,7 +1333,17 @@ public:
     return getSema().BuildReturnStmt(ReturnLoc, Result);
   }
 
-  /// \brief Build a new declaration statement.
+  /// Build a new return statement in the context of a parametric
+  /// expression
+  //
+  /// By default, performs semantic analysis to build the new statement.
+  /// Subclasses may override this routine to provide different behavior.
+  StmtResult RebuildParametricExpressionReturnStmt(SourceLocation ReturnLoc,
+                                                   Expr *Result) {
+    return getSema().BuildParametricExpressionReturnStmt(ReturnLoc, Result);
+  }
+
+  /// Build a new declaration statement.
   ///
   /// By default, performs semantic analysis to build the new statement.
   /// Subclasses may override this routine to provide different behavior.
@@ -3243,6 +3257,27 @@ public:
     // we are sure it is semantically sound.
     return new (SemaRef.Context) AtomicExpr(BuiltinLoc, SubExprs, RetTy, Op,
                                             RParenLoc);
+  }
+
+  // Build a new dependent call to a parametric expression
+  //
+  // By default this attempts to create a resolved call
+  ExprResult RebuildDependentParametricExpressionCallExpr(
+                                               ParametricExpressionDecl *D,
+                                               Expr *BaseExpr,
+                                               MultiExprArg CallArgs,
+                                               SourceLocation Loc) {
+    return SemaRef.ActOnParametricExpressionCallExpr(D, BaseExpr, CallArgs, Loc);
+  }
+
+  // Build a new call to a parametric expression
+  //
+  // By default, just creates a new one with the given inputs
+  ExprResult RebuildParametricExpressionCallExpr(
+                                               SourceLocation BeginLoc,
+                                               CompoundStmt *Body,
+                                               ArrayRef<ParmVarDecl *> Params) {
+    return SemaRef.BuildParametricExpressionCallExpr(BeginLoc, Body, Params);
   }
 
 private:
@@ -6820,6 +6855,21 @@ TreeTransform<Derived>::TransformReturnStmt(ReturnStmt *S) {
 
 template<typename Derived>
 StmtResult
+TreeTransform<Derived>::TransformParametricExpressionReturnStmt(
+    ParametricExpressionReturnStmt *S) {
+  ExprResult Result = getDerived().TransformExpr(S->getRetValue());
+  if (Result.isInvalid())
+    return StmtError();
+
+  if (getDerived().AlwaysRebuild() && Result.get() == S->getRetValue())
+    return S;
+
+  return getDerived().RebuildParametricExpressionReturnStmt(S->getReturnLoc(),
+                                                            Result.get());
+}
+
+template<typename Derived>
+StmtResult
 TreeTransform<Derived>::TransformDeclStmt(DeclStmt *S) {
   bool DeclChanged = false;
   SmallVector<Decl *, 4> Decls;
@@ -8869,6 +8919,13 @@ TreeTransform<Derived>::TransformDeclRefExpr(DeclRefExpr *E) {
     NameInfo = getDerived().TransformDeclarationNameInfo(NameInfo);
     if (!NameInfo.getName())
       return ExprError();
+  }
+
+  if (ParmVarDecl* PD = dyn_cast<ParmVarDecl>(ND)) {
+    if (PD->isUsingSpecified() && PD->hasInit()) {
+        Sema::ExpandingExprAliasRAII ExpandingExprAlias(SemaRef);
+        return SemaRef.SubstExpr(PD->getInit(), {});
+    }
   }
 
   if (!getDerived().AlwaysRebuild() &&
@@ -11532,6 +11589,14 @@ TreeTransform<Derived>::TransformFunctionParmPackExpr(FunctionParmPackExpr *E) {
 
 template<typename Derived>
 ExprResult
+TreeTransform<Derived>::TransformResolvedUnexpandedPackExpr(
+                                        ResolvedUnexpandedPackExpr *E) {
+  // Default behavior is to do nothing with this transformation.
+  return E;
+}
+
+template<typename Derived>
+ExprResult
 TreeTransform<Derived>::TransformMaterializeTemporaryExpr(
                                                   MaterializeTemporaryExpr *E) {
   return getDerived().TransformExpr(E->GetTemporaryExpr());
@@ -12777,6 +12842,108 @@ TreeTransform<Derived>::TransformCapturedStmt(CapturedStmt *S) {
   }
 
   return getSema().ActOnCapturedRegionEnd(Body.get());
+}
+
+template<typename Derived>
+ExprResult
+TreeTransform<Derived>::TransformParametricExpressionIdExpr(
+    ParametricExpressionIdExpr *E) {
+
+  ExprResult Base = getDerived().TransformExpr(E->getBaseExpr());
+  if (Base.isInvalid())
+    return ExprError();
+
+  if (getDerived().AlwaysRebuild() || Base.get() != E->getBaseExpr()) {
+    return ParametricExpressionIdExpr::Create(SemaRef.Context,
+                                              E->getBeginLoc(),
+                                              E->getDefinitionDecl(),
+                                              Base.get());
+  }
+
+  return E;
+}
+
+template<typename Derived>
+ExprResult
+TreeTransform<Derived>::TransformDependentParametricExpressionCallExpr(
+    DependentParametricExpressionCallExpr* E) {
+  // Get the transformed decl if it was in dependent context
+
+  ParametricExpressionDecl *D = E->getDecl();
+  ParametricExpressionDecl *NewDecl = D;
+  if (D->getParent()->isDependentContext())
+    NewDecl = cast<ParametricExpressionDecl>(
+                        getDerived().TransformDecl(E->getBeginLoc(), D));
+
+  // Transform the BaseExpr
+
+  ExprResult BaseExprResult = getDerived().TransformExpr(E->getBaseExpr());
+  if (BaseExprResult.isInvalid())
+    return ExprError();
+
+  // Transform the arguments
+
+  bool ArgChanged = false;
+  SmallVector<Expr*, 8> Args;
+  if (getDerived().TransformExprs(E->getArgs(), E->getNumArgs(), true, Args,
+                                  &ArgChanged))
+    return ExprError();
+
+  if (!getDerived().AlwaysRebuild() && NewDecl == D && !ArgChanged &&
+      BaseExprResult.get() == E->getBaseExpr())
+    return E;
+
+  return getDerived().RebuildDependentParametricExpressionCallExpr(
+                                                          NewDecl,
+                                                          BaseExprResult.get(),
+                                                          Args,
+                                                          E->getBeginLoc());
+}
+
+template<typename Derived>
+ExprResult
+TreeTransform<Derived>::TransformParametricExpressionCallExpr(
+    ParametricExpressionCallExpr *E) {
+  // Transform all the ParmVarDecls
+
+  bool ParamChanged = false;
+  llvm::SmallVector<ParmVarDecl*, 16> NewParmVarDecls{};
+  for (ParmVarDecl* PD : E->parameters()) {
+    ExprResult NewInit = getDerived().TransformExpr(PD->getInit());
+    if (NewInit.isInvalid())
+      return ExprError();
+
+    if (getDerived().AlwaysRebuild() ||
+        PD->getDeclContext() != getSema().CurContext ||
+        NewInit.get() != PD->getInit()
+    ) {
+      ParamChanged = true;
+      ParmVarDecl *NewPD = getSema().BuildParametricExpressionParam(
+                                                          PD, NewInit.get());
+      if (!NewPD) {
+        return ExprError();
+      }
+      getDerived().transformedLocalDecl(PD, NewPD);
+      NewParmVarDecls.push_back(NewPD);
+    } else {
+      NewParmVarDecls.push_back(PD);
+    }
+  }
+
+  // Transform the Body
+
+  StmtResult CSResult = getDerived().TransformStmt(E->getBody());
+  if (CSResult.isInvalid())
+    return ExprError();
+
+  if (!getDerived().AlwaysRebuild() && !ParamChanged &&
+      CSResult.get() == E->getBody()) {
+    return E;
+  }
+
+  return RebuildParametricExpressionCallExpr(E->getBeginLoc(),
+                                             CSResult.getAs<CompoundStmt>(),
+                                             NewParmVarDecls);
 }
 
 } // end namespace clang

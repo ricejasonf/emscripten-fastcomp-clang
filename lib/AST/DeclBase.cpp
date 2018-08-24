@@ -717,6 +717,7 @@ unsigned Decl::getIdentifierNamespaceForKind(Kind DeclKind) {
     case ObjCMethod:
     case ObjCProperty:
     case MSProperty:
+    case ParametricExpression:
       return IDNS_Ordinary;
     case Label:
       return IDNS_Label;
@@ -1045,7 +1046,10 @@ bool DeclContext::isDependentContext() const {
   if (isa<ClassTemplatePartialSpecializationDecl>(this))
     return true;
 
-  if (const CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(this)) {
+  if (isa<ParametricExpressionDecl>(this))
+    return true;
+
+  if (const auto *Record = dyn_cast<CXXRecordDecl>(this)) {
     if (Record->getDescribedClassTemplate())
       return true;
     
@@ -1127,6 +1131,7 @@ DeclContext *DeclContext::getPrimaryContext() {
   case Decl::Block:
   case Decl::Captured:
   case Decl::OMPDeclareReduction:
+  case Decl::ParametricExpression:
     // There is only one DeclContext for these entities.
     return this;
 

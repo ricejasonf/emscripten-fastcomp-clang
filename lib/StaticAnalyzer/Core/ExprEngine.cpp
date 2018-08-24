@@ -930,8 +930,12 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
     case Stmt::OMPTargetTeamsDistributeParallelForDirectiveClass:
     case Stmt::OMPTargetTeamsDistributeParallelForSimdDirectiveClass:
     case Stmt::OMPTargetTeamsDistributeSimdDirectiveClass:
-    case Stmt::CapturedStmtClass:
-    {
+    case Stmt::ParametricExpressionIdExprClass:
+    case Stmt::ParametricExpressionCallExprClass:
+    case Stmt::DependentParametricExpressionCallExprClass:
+    case Stmt::ParametricExpressionReturnStmtClass:
+    case Stmt::ResolvedUnexpandedPackExprClass:
+    case Stmt::CapturedStmtClass: {
       const ExplodedNode *node = Bldr.generateSink(S, Pred, Pred->getState());
       Engine.addAbortedBlock(node, currBldrCtx->getBlock());
       break;

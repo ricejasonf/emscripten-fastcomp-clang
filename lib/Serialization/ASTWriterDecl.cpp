@@ -145,6 +145,7 @@ namespace clang {
     void VisitOMPThreadPrivateDecl(OMPThreadPrivateDecl *D);
     void VisitOMPDeclareReductionDecl(OMPDeclareReductionDecl *D);
     void VisitOMPCapturedExprDecl(OMPCapturedExprDecl *D);
+    void VisitParametricExpressionDecl(ParametricExpressionDecl *D);
 
     /// Add an Objective-C type parameter list to the given record.
     void AddObjCTypeParamList(ObjCTypeParamList *typeParams) {
@@ -1730,6 +1731,10 @@ void ASTDeclWriter::VisitOMPCapturedExprDecl(OMPCapturedExprDecl *D) {
   Code = serialization::DECL_OMP_CAPTUREDEXPR;
 }
 
+void ASTDeclWriter::VisitParametricExpressionDecl(ParametricExpressionDecl *D) {
+  VisitNamedDecl(D);
+  Code = serialization::DECL_PARAMETRIC_EXPRESSION;
+}
 //===----------------------------------------------------------------------===//
 // ASTWriter Implementation
 //===----------------------------------------------------------------------===//

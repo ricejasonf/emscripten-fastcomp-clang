@@ -3436,6 +3436,7 @@ recurse:
   case Expr::TypoExprClass:  // This should no longer exist in the AST by now.
   case Expr::OMPArraySectionExprClass:
   case Expr::CXXInheritedCtorInitExprClass:
+  case Expr::ParametricExpressionIdExprClass:
     llvm_unreachable("unexpected statement kind");
 
   // FIXME: invent manglings for all these.
@@ -3471,6 +3472,10 @@ recurse:
   case Expr::AsTypeExprClass:
   case Expr::PseudoObjectExprClass:
   case Expr::AtomicExprClass:
+  case Expr::FixedPointLiteralClass:
+  case Expr::ParametricExpressionCallExprClass:
+  case Expr::DependentParametricExpressionCallExprClass:
+  case Expr::ResolvedUnexpandedPackExprClass:
   {
     if (!NullOut) {
       // As bad as this diagnostic is, it's better than crashing.

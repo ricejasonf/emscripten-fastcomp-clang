@@ -3000,6 +3000,7 @@ bool Expr::HasSideEffects(const ASTContext &Ctx,
   case ObjCAvailabilityCheckExprClass:
   case CXXUuidofExprClass:
   case OpaqueValueExprClass:
+  case ParametricExpressionIdExprClass:
     // These never have a side-effect.
     return false;
 
@@ -3070,6 +3071,9 @@ bool Expr::HasSideEffects(const ASTContext &Ctx,
   case ShuffleVectorExprClass:
   case ConvertVectorExprClass:
   case AsTypeExprClass:
+  case ParametricExpressionCallExprClass:
+  case DependentParametricExpressionCallExprClass:
+  case ResolvedUnexpandedPackExprClass:
     // These have a side-effect if any subexpression does.
     break;
 

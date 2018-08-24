@@ -482,6 +482,11 @@ void Sema::PrintInstantiationStack() {
         Diags.Report(Active->PointOfInstantiation,
                      diag::note_template_nsdmi_here)
             << FD << Active->InstantiationRange;
+      } else if (ParametricExpressionDecl *PD
+          = dyn_cast<ParametricExpressionDecl>(D)) {
+        Diags.Report(Active->PointOfInstantiation,
+                     diag::note_parametric_expression_instantiation_here)
+            << PD << Active->InstantiationRange;
       } else {
         Diags.Report(Active->PointOfInstantiation,
                      diag::note_template_type_alias_instantiation_here)
@@ -882,6 +887,11 @@ namespace {
     /// pack.
     ExprResult TransformFunctionParmPackExpr(FunctionParmPackExpr *E);
 
+    // Transform a ResolvedUnexpandedPackExpr which was built when a
+    // parametric expression return an unexpanded parameter pack.
+    ExprResult TransformResolvedUnexpandedPackExpr(
+                                        ResolvedUnexpandedPackExpr *E);
+
     QualType TransformFunctionProtoType(TypeLocBuilder &TLB,
                                         FunctionProtoTypeLoc TL) {
       // Call the base version; it will forward to our overridden version below.
@@ -935,8 +945,9 @@ namespace {
 bool TemplateInstantiator::AlreadyTransformed(QualType T) {
   if (T.isNull())
     return true;
-  
-  if (T->isInstantiationDependentType() || T->isVariablyModifiedType())
+
+  if (T->isInstantiationDependentType() || T->isVariablyModifiedType() ||
+      T->containsUnexpandedParameterPack())
     return false;
   
   getSema().MarkDeclarationsReferencedInType(Loc, T);
@@ -1309,6 +1320,11 @@ TemplateInstantiator::TransformSubstNonTypeTemplateParmPackExpr(
 ExprResult
 TemplateInstantiator::RebuildParmVarDeclRefExpr(ParmVarDecl *PD,
                                                 SourceLocation Loc) {
+  if (PD->isUsingSpecified() && PD->hasInit()) {
+    Sema::ExpandingExprAliasRAII ExpandingExprAlias(SemaRef);
+    return SemaRef.SubstExpr(PD->getInit(), {});
+  }
+
   DeclarationNameInfo NameInfo(PD->getDeclName(), Loc);
   return getSema().BuildDeclarationNameExpr(CXXScopeSpec(), NameInfo, PD);
 }
@@ -1525,7 +1541,30 @@ TemplateInstantiator::TransformSubstTemplateTypeParmPackType(
   return Result;
 }
 
-/// \brief Perform substitution on the type T with a given set of template
+ExprResult
+TemplateInstantiator::TransformResolvedUnexpandedPackExpr(
+                                    ResolvedUnexpandedPackExpr *E) {
+  if (getSema().ArgumentPackSubstitutionIndex != -1)
+    return TransformExpr(
+        E->getExpansion(getSema().ArgumentPackSubstitutionIndex));
+
+  if (!AlwaysRebuild())
+    return E;
+
+  SmallVector<Expr*, 12> NewExprs;
+  if (TransformExprs(E->getExprs(), E->getNumExprs(),
+                     /*IsCall=*/false, NewExprs))
+    return ExprError();
+      
+  // NOTE: The type is just a superficial PackExpansionType
+  //       that needs no substitution.
+  return ResolvedUnexpandedPackExpr::Create(SemaRef.Context,
+                                            E->getBeginLoc(),
+                                            E->getType(),
+                                            NewExprs);
+}
+
+/// Perform substitution on the type T with a given set of template
 /// arguments.
 ///
 /// This routine substitutes the given template arguments into the
@@ -2023,7 +2062,9 @@ Sema::InstantiateClass(SourceLocation PointOfInstantiation,
   // If this is an instantiation of a local class, merge this local
   // instantiation scope with the enclosing scope. Otherwise, every
   // instantiation of a class has its own local instantiation scope.
-  bool MergeWithParentScope = !Instantiation->isDefinedOutsideFunctionOrMethod();
+  bool MergeWithParentScope =
+    !Instantiation->isDefinedOutsideFunctionOrMethod() ||
+    isa<ParametricExpressionDecl>(Pattern->getDeclContext());
   LocalInstantiationScope Scope(*this, MergeWithParentScope);
 
   // Some class state isn't processed immediately but delayed till class
@@ -2847,7 +2888,7 @@ static const Decl *getCanonicalParmVarDecl(const Decl *D) {
       unsigned i = PV->getFunctionScopeIndex();
       // This parameter might be from a freestanding function type within the
       // function and isn't necessarily referring to one of FD's parameters.
-      if (FD->getParamDecl(i) == PV)
+      if (i < FD->getNumParams() && FD->getParamDecl(i) == PV)
         return FD->getCanonicalDecl()->getParamDecl(i);
     }
   }
@@ -2900,7 +2941,11 @@ LocalInstantiationScope::findInstantiationOf(const Decl *D) {
   // If we didn't find the decl, then we either have a sema bug, or we have a
   // forward reference to a label declaration.  Return null to indicate that
   // we have an uninstantiated label.
-  assert(isa<LabelDecl>(D) && "declaration not instantiated in this scope");
+  // Or...
+  // When expanding `using` vars some exprs might refer to the
+  // instantiatiated declarations from previous instantiations
+  assert((isa<LabelDecl>(D) || SemaRef.ExpandingExprAlias) &&
+      "declaration not instantiated in this scope");
   return nullptr;
 }
 

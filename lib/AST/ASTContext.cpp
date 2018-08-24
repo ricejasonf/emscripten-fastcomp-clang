@@ -1186,6 +1186,9 @@ void ASTContext::InitBuiltinTypes(const TargetInfo &Target,
   // Placeholder type for builtin functions.
   InitBuiltinType(BuiltinFnTy,  BuiltinType::BuiltinFn);
 
+  // Placeholder type for parametric expression id.
+  InitBuiltinType(ParametricExpressionIdTy,  BuiltinType::ParametricExpressionId);
+
   // Placeholder type for OMP array sections.
   if (LangOpts.OpenMP)
     InitBuiltinType(OMPArraySectionTy, BuiltinType::OMPArraySection);

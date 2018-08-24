@@ -195,6 +195,10 @@ public:
     RValue Res = CGF.EmitAtomicExpr(E);
     EmitFinalDestCopy(E->getType(), Res);
   }
+
+  void VisitParametricExpressionCallExpr(ParametricExpressionCallExpr* E) {
+    CGF.EmitParametricExpressionCallExpr(E, Dest);
+  }
 };
 }  // end anonymous namespace.
 

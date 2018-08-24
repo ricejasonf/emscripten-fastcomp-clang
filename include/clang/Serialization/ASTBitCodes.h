@@ -914,7 +914,85 @@ namespace serialization {
       /// \brief The '_Float16' type
       PREDEF_TYPE_FLOAT16_ID = 44,
 
-      /// \brief OpenCL image types with auto numeration
+      /// The C++ 'char8_t' type.
+      PREDEF_TYPE_CHAR8_ID = 45,
+
+      /// \brief The 'short _Accum' type
+      PREDEF_TYPE_SHORT_ACCUM_ID    = 46,
+
+      /// \brief The '_Accum' type
+      PREDEF_TYPE_ACCUM_ID      = 47,
+
+      /// \brief The 'long _Accum' type
+      PREDEF_TYPE_LONG_ACCUM_ID = 48,
+
+      /// \brief The 'unsigned short _Accum' type
+      PREDEF_TYPE_USHORT_ACCUM_ID   = 49,
+
+      /// \brief The 'unsigned _Accum' type
+      PREDEF_TYPE_UACCUM_ID     = 50,
+
+      /// \brief The 'unsigned long _Accum' type
+      PREDEF_TYPE_ULONG_ACCUM_ID    = 51,
+
+      /// \brief The 'short _Fract' type
+      PREDEF_TYPE_SHORT_FRACT_ID = 52,
+
+      /// \brief The '_Fract' type
+      PREDEF_TYPE_FRACT_ID = 53,
+
+      /// \brief The 'long _Fract' type
+      PREDEF_TYPE_LONG_FRACT_ID = 54,
+
+      /// \brief The 'unsigned short _Fract' type
+      PREDEF_TYPE_USHORT_FRACT_ID = 55,
+
+      /// \brief The 'unsigned _Fract' type
+      PREDEF_TYPE_UFRACT_ID = 56,
+
+      /// \brief The 'unsigned long _Fract' type
+      PREDEF_TYPE_ULONG_FRACT_ID = 57,
+
+      /// \brief The '_Sat short _Accum' type
+      PREDEF_TYPE_SAT_SHORT_ACCUM_ID = 58,
+
+      /// \brief The '_Sat _Accum' type
+      PREDEF_TYPE_SAT_ACCUM_ID = 59,
+
+      /// \brief The '_Sat long _Accum' type
+      PREDEF_TYPE_SAT_LONG_ACCUM_ID = 60,
+
+      /// \brief The '_Sat unsigned short _Accum' type
+      PREDEF_TYPE_SAT_USHORT_ACCUM_ID = 61,
+
+      /// \brief The '_Sat unsigned _Accum' type
+      PREDEF_TYPE_SAT_UACCUM_ID = 62,
+
+      /// \brief The '_Sat unsigned long _Accum' type
+      PREDEF_TYPE_SAT_ULONG_ACCUM_ID = 63,
+
+      /// \brief The '_Sat short _Fract' type
+      PREDEF_TYPE_SAT_SHORT_FRACT_ID = 64,
+
+      /// \brief The '_Sat _Fract' type
+      PREDEF_TYPE_SAT_FRACT_ID = 65,
+
+      /// \brief The '_Sat long _Fract' type
+      PREDEF_TYPE_SAT_LONG_FRACT_ID = 66,
+
+      /// \brief The '_Sat unsigned short _Fract' type
+      PREDEF_TYPE_SAT_USHORT_FRACT_ID = 67,
+
+      /// \brief The '_Sat unsigned _Fract' type
+      PREDEF_TYPE_SAT_UFRACT_ID = 68,
+
+      /// \brief The '_Sat unsigned long _Fract' type
+      PREDEF_TYPE_SAT_ULONG_FRACT_ID = 69,
+
+      /// \brief The placeholder type of a parametric expression name
+      PREDEF_TYPE_PARAMETRIC_EXPRESSION_ID = 70,
+
+      /// OpenCL image types with auto numeration
 #define IMAGE_TYPE(ImgType, Id, SingletonId, Access, Suffix) \
       PREDEF_TYPE_##Id##_ID,
 #include "clang/Basic/OpenCLImageTypes.def"
@@ -1433,6 +1511,9 @@ namespace serialization {
 
       /// \brief An OMPDeclareReductionDecl record.
       DECL_OMP_DECLARE_REDUCTION,
+
+      // A parametric expression
+      DECL_PARAMETRIC_EXPRESSION,
     };
 
     /// \brief Record codes for each kind of statement or expression.
@@ -1501,7 +1582,10 @@ namespace serialization {
       /// \brief A ReturnStmt record.
       STMT_RETURN,
 
-      /// \brief A DeclStmt record.
+      /// A ReturnStmt record.
+      STMT_PARAMETRIC_EXPRESSION_RETURN,
+
+      /// A DeclStmt record.
       STMT_DECL,
 
       /// \brief A CapturedStmt record.

@@ -2588,6 +2588,53 @@ Decl *TemplateDeclInstantiator::VisitConstructorUsingShadowDecl(
   return nullptr;
 }
 
+Decl *TemplateDeclInstantiator::VisitParametricExpressionDecl(
+                                              ParametricExpressionDecl *D) {
+  ParametricExpressionDecl *New = ParametricExpressionDecl::Create(
+                                                SemaRef.Context, Owner, D);
+  // Enter the scope of this instantiation. We don't use
+  // PushDeclContext because we don't have a scope.
+  Sema::ContextRAII savedContext(SemaRef, New);
+  LocalInstantiationScope Scope(SemaRef, /*CombineWithOuterScope=*/true);
+  Sema::InstantiatingTemplate Inst(SemaRef, New->getBeginLoc(), New);
+
+  // Providing template args was causing pack expansion weirdness
+  MultiLevelTemplateArgumentList
+  LocalTemplateArgs = {};
+
+  // Params
+  SmallVector<ParmVarDecl*, 16> NewParams{};
+  for (ParmVarDecl *OldParm : D->parameters()) {
+    ParmVarDecl *NewParm = SemaRef.BuildParametricExpressionParam(
+                                                        OldParm, nullptr);
+    NewParams.push_back(NewParm);
+    Scope.InstantiatedLocal(OldParm, NewParm);
+  }
+  New->setParams(SemaRef.Context, NewParams);
+
+  // Body
+  Stmt* Body;
+  if (isa<CompoundStmt>(D->getBody())) {
+    SemaRef.PushFunctionScope();
+    StmtResult BodyResult = SemaRef.SubstStmt(D->getBody(),
+                                              LocalTemplateArgs);
+    SemaRef.PopFunctionScopeInfo();
+    if (BodyResult.isInvalid())
+      return nullptr;
+    Body = BodyResult.get();
+  } else {
+    ExprResult BodyResult = SemaRef.SubstExpr(cast<Expr>(D->getBody()),
+                                              LocalTemplateArgs);
+    if (BodyResult.isInvalid())
+      return nullptr;
+    Body = BodyResult.get();
+  }
+  New->setBody(Body);
+
+  Owner->addDecl(New);
+  return New;
+}
+
 template <typename T>
 Decl *TemplateDeclInstantiator::instantiateUnresolvedUsingDecl(
     T *D, bool InstantiatingPackElement) {
@@ -4914,7 +4961,8 @@ NamedDecl *Sema::FindInstantiatedDecl(SourceLocation Loc, NamedDecl *D,
   //  - as long as we have a ParmVarDecl whose parent is non-dependent and
   //    whose type is not instantiation dependent, do nothing to the decl
   //  - otherwise find its instantiated decl.
-  if (isa<ParmVarDecl>(D) && !ParentDC->isDependentContext() &&
+  if (!ExpandingExprAlias &&
+      isa<ParmVarDecl>(D) && !ParentDC->isDependentContext() &&
       !cast<ParmVarDecl>(D)->getType()->isInstantiationDependentType())
     return D;
   if (isa<ParmVarDecl>(D) || isa<NonTypeTemplateParmDecl>(D) ||
@@ -4933,9 +4981,12 @@ NamedDecl *Sema::FindInstantiatedDecl(SourceLocation Loc, NamedDecl *D,
                "found declaration pack but not pack expanding");
         typedef LocalInstantiationScope::DeclArgumentPack DeclArgumentPack;
         return cast<NamedDecl>((*Found->get<DeclArgumentPack *>())[PackIdx]);
+      } else if (ExpandingExprAlias) {
+        // When expanding `using` vars some exprs might refer to the
+        // instantiatiated declarations from previous instantiations
+        return D;
       }
     }
-
     // If we're performing a partial substitution during template argument
     // deduction, we may not have values for template parameters yet. They
     // just map to themselves.

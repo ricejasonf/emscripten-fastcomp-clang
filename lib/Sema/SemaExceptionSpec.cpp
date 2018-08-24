@@ -1176,6 +1176,7 @@ CanThrowResult Sema::canThrow(const Expr *E) {
   case Expr::ShuffleVectorExprClass:
   case Expr::ConvertVectorExprClass:
   case Expr::VAArgExprClass:
+  case Expr::ResolvedUnexpandedPackExprClass:
     return canSubExprsThrow(*this, E);
 
     // Some might be dependent for other reasons.
@@ -1196,6 +1197,7 @@ CanThrowResult Sema::canThrow(const Expr *E) {
 
     // FIXME: We should handle StmtExpr, but that opens a MASSIVE can of worms.
   case Expr::StmtExprClass:
+  case Expr::ParametricExpressionCallExprClass:
     return CT_Can;
 
   case Expr::CXXDefaultArgExprClass:
@@ -1219,6 +1221,7 @@ CanThrowResult Sema::canThrow(const Expr *E) {
   case Expr::CXXUnresolvedConstructExprClass:
   case Expr::DependentScopeDeclRefExprClass:
   case Expr::CXXFoldExprClass:
+  case Expr::DependentParametricExpressionCallExprClass:
     return CT_Dependent;
 
   case Expr::AsTypeExprClass:
@@ -1241,6 +1244,7 @@ CanThrowResult Sema::canThrow(const Expr *E) {
   case Expr::UnresolvedLookupExprClass:
   case Expr::UnresolvedMemberExprClass:
   case Expr::TypoExprClass:
+  case Expr::ParametricExpressionIdExprClass:
     // FIXME: Can any of the above throw?  If so, when?
     return CT_Cannot;
 

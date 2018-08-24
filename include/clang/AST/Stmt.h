@@ -1419,6 +1419,15 @@ class ReturnStmt : public Stmt {
   Stmt *RetExpr;
   const VarDecl *NRVOCandidate;
 
+protected:
+  ReturnStmt(StmtClass SC, SourceLocation RL, Expr *E,
+             const VarDecl *NRVOCandidate)
+      : Stmt(SC), RetLoc(RL), RetExpr((Stmt *)E),
+        NRVOCandidate(NRVOCandidate) {}
+
+  ReturnStmt(StmtClass SC, EmptyShell Empty)
+      : Stmt(SC, Empty) {}
+
 public:
   explicit ReturnStmt(SourceLocation RL) : ReturnStmt(RL, nullptr, nullptr) {}
 
