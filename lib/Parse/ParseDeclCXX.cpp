@@ -879,13 +879,14 @@ Parser::ParseParametricExpressionDeclaration(
 
   CXXScopeSpec Spec;
   UnqualifiedId &Name = D.getName();
+  SourceLocation TemplateKWLoc;
   if (ParseUnqualifiedId(
           Spec,
           /*EnteringContext=*/false,
           /*AllowDestructorName=*/false,
           /*AllowConstructorName=*/false,
           /*AllowDeductionGuide=*/false,
-          nullptr, nullptr, Name)) {
+          nullptr, TemplateKWLoc, Name)) {
     return nullptr;
   }
 
@@ -904,7 +905,7 @@ Parser::ParseParametricExpressionDeclaration(
 #endif
   }
   else if (Name.getKind() != UnqualifiedIdKind::IK_Identifier) {
-    Diag(Name.getBeginLoc(), diag::err_parametric_expression_name_invalid)
+    Diag(Name.getLocStart(), diag::err_parametric_expression_name_invalid)
       << FixItHint::CreateRemoval(Name.getSourceRange());
     SkipMalformedDecl();
     return nullptr;

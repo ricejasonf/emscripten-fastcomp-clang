@@ -1962,7 +1962,6 @@ public:
     case DeclaratorContext::ConversionIdContext:
     case DeclaratorContext::TemplateTypeArgContext:
     case DeclaratorContext::TrailingReturnContext:
-    case DeclaratorContext::TrailingReturnVarContext:
     case DeclaratorContext::ParametricExpressionContext:
     case DeclaratorContext::ParametricExpressionParameterContext:
       return true;
@@ -2002,7 +2001,6 @@ public:
     case DeclaratorContext::ConversionIdContext:
     case DeclaratorContext::TemplateTypeArgContext:
     case DeclaratorContext::TrailingReturnContext:
-    case DeclaratorContext::TrailingReturnVarContext:
     case DeclaratorContext::ParametricExpressionContext:
       return false;
     }
@@ -2044,7 +2042,6 @@ public:
     case DeclaratorContext::ConversionIdContext:
     case DeclaratorContext::TemplateTypeArgContext:
     case DeclaratorContext::TrailingReturnContext:
-    case DeclaratorContext::TrailingReturnVarContext:
     case DeclaratorContext::ParametricExpressionContext:
     case DeclaratorContext::ParametricExpressionParameterContext:
       return false;
@@ -2311,7 +2308,6 @@ public:
     case DeclaratorContext::ConversionIdContext:
     case DeclaratorContext::TemplateTypeArgContext:
     case DeclaratorContext::TrailingReturnContext:
-    case DeclaratorContext::TrailingReturnVarContext:
     case DeclaratorContext::ParametricExpressionContext:
     case DeclaratorContext::ParametricExpressionParameterContext:
       return false;
@@ -2328,8 +2324,8 @@ public:
     case DeclaratorContext::MemberContext:
 
     // FIXME: sizeof(...) permits an expression.
-    case DeclaratorContext::TypeNameContext: 
-    
+    case DeclaratorContext::TypeNameContext:
+
     case DeclaratorContext::FunctionalCastContext:
     case DeclaratorContext::AliasDeclContext:
     case DeclaratorContext::AliasTemplateContext:
@@ -2345,7 +2341,6 @@ public:
     case DeclaratorContext::LambdaExprContext:
     case DeclaratorContext::ConversionIdContext:
     case DeclaratorContext::TrailingReturnContext:
-    case DeclaratorContext::TrailingReturnVarContext:
     case DeclaratorContext::TemplateTypeArgContext:
     case DeclaratorContext::ParametricExpressionContext:
     case DeclaratorContext::ParametricExpressionParameterContext:
@@ -2355,7 +2350,6 @@ public:
     case DeclaratorContext::ForContext:
     case DeclaratorContext::InitStmtContext:
     case DeclaratorContext::ConditionContext:
-    case DeclaratorContext::TemplateTypeArgContext:
       return true;
     }
 

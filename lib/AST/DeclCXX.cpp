@@ -2695,7 +2695,7 @@ ParametricExpressionDecl *ParametricExpressionDecl::Create(
                             ParametricExpressionDecl *Old) {
   ParametricExpressionDecl *New =
       new (C, DC) ParametricExpressionDecl(DC, Old->getDeclName(),
-                                           Old->getBeginLoc(),
+                                           Old->getLocStart(),
                                            Old->getTemplateDepth(),
                                            Old->isStatic());
   New->setAccess(Old->getAccess());

@@ -4442,6 +4442,8 @@ public:
 
   SourceLocation getBeginLoc() const LLVM_READONLY { return BeginLoc; }
   SourceLocation getEndLoc() const LLVM_READONLY { return BeginLoc; }
+  SourceLocation getLocStart() const LLVM_READONLY { return BeginLoc; }
+  SourceLocation getLocEnd() const LLVM_READONLY { return BeginLoc; }
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == ParametricExpressionIdExprClass;
@@ -4497,6 +4499,8 @@ public:
 
   SourceLocation getBeginLoc() const LLVM_READONLY { return BeginLoc; }
   SourceLocation getEndLoc() const LLVM_READONLY { return BeginLoc; }
+  SourceLocation getLocStart() const LLVM_READONLY { return BeginLoc; }
+  SourceLocation getLocEnd() const LLVM_READONLY { return BeginLoc; }
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == DependentParametricExpressionCallExprClass;
@@ -4565,6 +4569,8 @@ public:
 
   SourceLocation getBeginLoc() const LLVM_READONLY { return BeginLoc; }
   SourceLocation getEndLoc() const LLVM_READONLY { return BeginLoc; }
+  SourceLocation getLocStart() const LLVM_READONLY { return BeginLoc; }
+  SourceLocation getLocEnd() const LLVM_READONLY { return BeginLoc; }
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == ParametricExpressionCallExprClass;
@@ -4610,6 +4616,8 @@ public:
 
   SourceLocation getBeginLoc() const LLVM_READONLY { return BeginLoc; }
   SourceLocation getEndLoc() const LLVM_READONLY { return BeginLoc; }
+  SourceLocation getLocStart() const LLVM_READONLY { return BeginLoc; }
+  SourceLocation getLocEnd() const LLVM_READONLY { return BeginLoc; }
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == ResolvedUnexpandedPackExprClass;

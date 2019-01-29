@@ -3329,24 +3329,6 @@ void Sema::ArgumentDependentLookup(DeclarationName Name, SourceLocation Loc,
     //        lookup (11.4).
     DeclContext::lookup_result R = NS->lookup(Name);
     for (auto *D : R) {
-      auto *Underlying = D;
-      if (auto *USD = dyn_cast<UsingShadowDecl>(D))
-        Underlying = USD->getTargetDecl();
-
-      if (!isa<FunctionDecl>(Underlying) &&
-          !isa<FunctionTemplateDecl>(Underlying) &&
-          !isa<ParametricExpressionDecl>(Underlying))
-        continue;
-
-      if (!isVisible(D)) {
-        D = findAcceptableDecl(
-            *this, D, (Decl::IDNS_Ordinary | Decl::IDNS_OrdinaryFriend));
-        if (!D)
-          continue;
-        if (auto *USD = dyn_cast<UsingShadowDecl>(D))
-          Underlying = USD->getTargetDecl();
-      }
-
       // If the only declaration here is an ordinary friend, consider
       // it only if it was declared in an associated classes.
       if ((D->getIdentifierNamespace() & Decl::IDNS_Ordinary) == 0) {
@@ -3373,7 +3355,8 @@ void Sema::ArgumentDependentLookup(DeclarationName Name, SourceLocation Loc,
         Underlying = USD->getTargetDecl();
 
       if (!isa<FunctionDecl>(Underlying) &&
-          !isa<FunctionTemplateDecl>(Underlying))
+          !isa<FunctionTemplateDecl>(Underlying) &&
+          !isa<ParametricExpressionDecl>(Underlying))
         continue;
 
       if (!isVisible(D)) {

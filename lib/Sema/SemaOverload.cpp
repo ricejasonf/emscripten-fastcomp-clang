@@ -6366,7 +6366,6 @@ void Sema::AddFunctionCandidates(const UnresolvedSetImpl &Fns,
                                  bool FirstArgumentIsBase) {
   for (UnresolvedSetIterator F = Fns.begin(), E = Fns.end(); F != E; ++F) {
     NamedDecl *D = F.getDecl()->getUnderlyingDecl();
-    ArrayRef<Expr *> FunctionArgs = Args;
 
     if (ParametricExpressionDecl *PD =
         dyn_cast_or_null<ParametricExpressionDecl>(F.getDecl())) {
@@ -6374,14 +6373,40 @@ void Sema::AddFunctionCandidates(const UnresolvedSetImpl &Fns,
       return;
     }
 
-    FunctionTemplateDecl *FunTmpl = dyn_cast<FunctionTemplateDecl>(D);
-    FunctionDecl *FD =
-        FunTmpl ? FunTmpl->getTemplatedDecl() : cast<FunctionDecl>(D);
-
-    if (isa<CXXMethodDecl>(FD) && !cast<CXXMethodDecl>(FD)->isStatic()) {
-      QualType ObjectType;
-      Expr::Classification ObjectClassification;
-      if (Args.size() > 0) {
+    if (FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
+      ArrayRef<Expr *> FunctionArgs = Args;
+      if (isa<CXXMethodDecl>(FD) && !cast<CXXMethodDecl>(FD)->isStatic()) {
+        QualType ObjectType;
+        Expr::Classification ObjectClassification;
+        if (Args.size() > 0) {
+          if (Expr *E = Args[0]) {
+            // Use the explit base to restrict the lookup:
+            ObjectType = E->getType();
+            ObjectClassification = E->Classify(Context);
+          } // .. else there is an implit base.
+          FunctionArgs = Args.slice(1);
+        }
+        AddMethodCandidate(cast<CXXMethodDecl>(FD), F.getPair(),
+                           cast<CXXMethodDecl>(FD)->getParent(), ObjectType,
+                           ObjectClassification, FunctionArgs, CandidateSet,
+                           SuppressUserConversions, PartialOverloading);
+      } else {
+        // Slice the first argument (which is the base) when we access
+        // static method as non-static
+        if (Args.size() > 0 && (!Args[0] || (FirstArgumentIsBase && isa<CXXMethodDecl>(FD) &&
+                                             !isa<CXXConstructorDecl>(FD)))) {
+          assert(cast<CXXMethodDecl>(FD)->isStatic());
+          FunctionArgs = Args.slice(1);
+        }
+        AddOverloadCandidate(FD, F.getPair(), FunctionArgs, CandidateSet,
+                             SuppressUserConversions, PartialOverloading);
+      }
+    } else {
+      FunctionTemplateDecl *FunTmpl = cast<FunctionTemplateDecl>(D);
+      if (isa<CXXMethodDecl>(FunTmpl->getTemplatedDecl()) &&
+          !cast<CXXMethodDecl>(FunTmpl->getTemplatedDecl())->isStatic()) {
+        QualType ObjectType;
+        Expr::Classification ObjectClassification;
         if (Expr *E = Args[0]) {
           // Use the explit base to restrict the lookup:
           ObjectType = E->getType();
@@ -10579,7 +10604,7 @@ void OverloadCandidateSet::NoteCandidates(
       NoteSurrogateCandidate(S, Cand);
     else if (ParametricExpressionDecl *PD =
         dyn_cast_or_null<ParametricExpressionDecl>(Cand->FoundDecl.getDecl()))
-      S.Diag(PD->getBeginLoc(),
+      S.Diag(PD->getLocStart(),
              diag::note_ovl_parametric_expression_candidate);
     else {
       assert(Cand->Viable &&

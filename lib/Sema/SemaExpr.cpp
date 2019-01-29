@@ -16027,7 +16027,7 @@ ExprResult Sema::CheckPlaceholderExpr(Expr *E) {
   // Parametric Expression Ids
   case BuiltinType::ParametricExpressionId: {
     ExprResult result = E;
-    Diag(E->getBeginLoc(), diag::err_parametric_expression_id);
+    Diag(E->getLocStart(), diag::err_parametric_expression_id);
     return result;
   }
 

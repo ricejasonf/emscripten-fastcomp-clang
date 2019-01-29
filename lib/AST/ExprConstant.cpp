@@ -10355,7 +10355,7 @@ static ICEDiag CheckICE(const Expr* E, const ASTContext &Ctx) {
   case Expr::ParametricExpressionCallExprClass:
   case Expr::DependentParametricExpressionCallExprClass:
   case Expr::ResolvedUnexpandedPackExprClass:
-    return ICEDiag(IK_NotICE, E->getBeginLoc());
+    return ICEDiag(IK_NotICE, E->getLocStart());
 
   case Expr::InitListExprClass: {
     // C++03 [dcl.init]p13: If T is a scalar type, then a declaration of the

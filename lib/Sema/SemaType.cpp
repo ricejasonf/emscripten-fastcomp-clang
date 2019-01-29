@@ -4934,7 +4934,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       TemplateTypeParmDecl *DummyTemplateParam =
           TemplateTypeParmDecl::Create(
               S.Context, S.Context.getTranslationUnitDecl(),
-              /*KeyLoc*/ SourceLocation(), /*NameLoc*/ D.getBeginLoc(),
+              /*KeyLoc*/ SourceLocation(), /*NameLoc*/ D.getLocStart(),
               TemplateDepth, /*AutoParameterPosition*/ 0,
               /*Identifier*/ nullptr, false, /*IsParameterPack*/ true);
       T = Context.getPackExpansionType(
@@ -4998,23 +4998,23 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       !D.hasEllipsis()) {
     // This might not be the correct place to check these
     if (T.isLocalVolatileQualified()) {
-      S.Diag(D.getBeginLoc(), diag::err_parametric_expression_constraint_has_qualifiers);
+      S.Diag(D.getLocStart(), diag::err_parametric_expression_constraint_has_qualifiers);
       D.setInvalidType(true);
     }
     if (T.isLocalRestrictQualified()) {
-      S.Diag(D.getBeginLoc(), diag::err_parametric_expression_constraint_has_qualifiers);
+      S.Diag(D.getLocStart(), diag::err_parametric_expression_constraint_has_qualifiers);
       D.setInvalidType(true);
     }
     // this is a hack
     if (T->isReferenceType() || T->isPointerType()) {
-      S.Diag(D.getBeginLoc(), diag::err_parametric_expression_constraint_has_qualifiers);
+      S.Diag(D.getLocStart(), diag::err_parametric_expression_constraint_has_qualifiers);
       D.setInvalidType(true);
     }
 
     // "Apply constraint"
     AutoType* A = T->getContainedAutoType();
     if (!A) {
-      S.Diag(D.getBeginLoc(), diag::err_parametric_expression_requires_constraint);
+      S.Diag(D.getLocStart(), diag::err_parametric_expression_requires_constraint);
       D.setInvalidType(true);
     }
 

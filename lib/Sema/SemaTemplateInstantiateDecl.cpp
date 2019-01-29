@@ -2596,7 +2596,7 @@ Decl *TemplateDeclInstantiator::VisitParametricExpressionDecl(
   // PushDeclContext because we don't have a scope.
   Sema::ContextRAII savedContext(SemaRef, New);
   LocalInstantiationScope Scope(SemaRef, /*CombineWithOuterScope=*/true);
-  Sema::InstantiatingTemplate Inst(SemaRef, New->getBeginLoc(), New);
+  Sema::InstantiatingTemplate Inst(SemaRef, New->getLocStart(), New);
 
   // Providing template args was causing pack expansion weirdness
   MultiLevelTemplateArgumentList

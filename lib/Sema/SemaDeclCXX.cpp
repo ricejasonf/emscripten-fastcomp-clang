@@ -10170,12 +10170,12 @@ ParametricExpressionDecl *Sema::ActOnParametricExpressionDecl(
       Diag(BeginLoc, diag::err_redefinition_of_parametric_expression)
         << NameInfo.getName();
       notePreviousDefinition(PreviousDecl,
-                             D.getBeginLoc());
+                             D.getLocStart());
     } else {
       Diag(BeginLoc, diag::err_redefinition_different_kind)
         << NameInfo.getName();
       notePreviousDefinition(PreviousDecl,
-                             D.getBeginLoc());
+                             D.getLocStart());
     }
     return nullptr;
   }
@@ -10204,7 +10204,7 @@ bool Sema::CheckParametricExpressionParams(
   SmallVector<ParmVarDecl*, 16> Params;
 
   if (New->getThisContext() && ParamInfo.size() == 0) {
-    Diag(New->getBeginLoc(),
+    Diag(New->getLocStart(),
          diag::err_member_parametric_expression_must_have_self_param);
   }
 
@@ -10220,14 +10220,14 @@ bool Sema::CheckParametricExpressionParams(
 
     if (PD->isParameterPack()) {
       if (PackLocation.isValid()) {
-        Diag(PD->getBeginLoc(),
+        Diag(PD->getLocStart(),
              diag::err_parametric_expression_multiple_parameter_packs);
         Diag(PackLocation, diag::note_entity_declared_at)
           << "Previous parameter pack";
         return true;
       }
       else {
-        PackLocation = PD->getBeginLoc();
+        PackLocation = PD->getLocStart();
       }
     }
 

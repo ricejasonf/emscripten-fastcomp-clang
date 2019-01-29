@@ -1021,7 +1021,7 @@ void CodeGenFunction::EmitReturnOfRValue(RValue RV, QualType Ty) {
 /// non-void.  Fun stuff :).
 void CodeGenFunction::EmitReturnStmt(const ReturnStmt &S, bool IsParmExpr) {
   if (requiresReturnValueCheck() && !IsParmExpr) {
-    llvm::Constant *SLoc = EmitCheckSourceLocation(S.getBeginLoc());
+    llvm::Constant *SLoc = EmitCheckSourceLocation(S.getLocStart());
     auto *SLocPtr =
         new llvm::GlobalVariable(CGM.getModule(), SLoc->getType(), false,
                                  llvm::GlobalVariable::PrivateLinkage, SLoc);

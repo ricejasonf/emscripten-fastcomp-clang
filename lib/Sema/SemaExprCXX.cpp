@@ -7729,7 +7729,7 @@ public:
     QualType CurrentResultType{};
     if (RE) {
       CurrentResultType = SemaRef.BuildDecltypeType(RS->getRetValue(),
-                                     RS->getRetValue()->getBeginLoc(),
+                                     RS->getRetValue()->getLocStart(),
                                      /*AsUnevaluated=*/false);
     } else {
       CurrentResultType = SemaRef.Context.VoidTy;
@@ -7925,7 +7925,7 @@ ParmVarDecl *Sema::BuildParametricExpressionParam(ParmVarDecl *Old,
     ArgTy = Context.getAutoType(QualType(), AutoTypeKeyword::Auto,
                               /*IsDependent=*/false);
     TypeLocBuilder TLB;
-    TLB.pushTypeSpec(ArgTy).setNameLoc(Old->getBeginLoc());
+    TLB.pushTypeSpec(ArgTy).setNameLoc(Old->getLocStart());
     TypeSourceInfo *TSI = TLB.getTypeSourceInfo(Context, ArgTy);
 
     ArgTy = deduceVarTypeFromInitializer(
