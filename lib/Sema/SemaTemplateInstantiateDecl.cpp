@@ -10,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===/
 #include "clang/Sema/SemaInternal.h"
+#include "clang/Sema/ScopeInfo.h"
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTMutationListener.h"
@@ -2147,9 +2148,18 @@ Decl *TemplateDeclInstantiator::VisitTemplateTypeParmDecl(
   // TODO: don't always clone when decls are refcounted.
   assert(D->getTypeForDecl()->isTemplateTypeParmType());
 
+  unsigned NewDepth = D->getDepth() - TemplateArgs.getNumSubstitutedLevels();
+  if (SemaRef.ExpandingExprAlias) {
+    if (auto* LSI = SemaRef.getCurGenericLambda()) {
+      assert(LSI->GLTemplateParameterList != nullptr &&
+        "GLTemplateParameterList is nullptr");
+      NewDepth = LSI->GLTemplateParameterList->getDepth() + 1;
+    }
+  }
+
   TemplateTypeParmDecl *Inst = TemplateTypeParmDecl::Create(
       SemaRef.Context, Owner, D->getLocStart(), D->getLocation(),
-      D->getDepth() - TemplateArgs.getNumSubstitutedLevels(), D->getIndex(),
+      NewDepth, D->getIndex(),
       D->getIdentifier(), D->wasDeclaredWithTypename(), D->isParameterPack());
   Inst->setAccess(AS_public);
 
@@ -2284,17 +2294,26 @@ Decl *TemplateDeclInstantiator::VisitNonTypeTemplateParmDecl(
     }
   }
 
+  unsigned NewDepth = D->getDepth() - TemplateArgs.getNumSubstitutedLevels();
+  if (SemaRef.ExpandingExprAlias) {
+    if (auto* LSI = SemaRef.getCurGenericLambda()) {
+      assert(LSI->GLTemplateParameterList != nullptr &&
+        "GLTemplateParameterList is nullptr");
+      NewDepth = LSI->GLTemplateParameterList->getDepth() + 1;
+    }
+  }
+
   NonTypeTemplateParmDecl *Param;
   if (IsExpandedParameterPack)
     Param = NonTypeTemplateParmDecl::Create(
         SemaRef.Context, Owner, D->getInnerLocStart(), D->getLocation(),
-        D->getDepth() - TemplateArgs.getNumSubstitutedLevels(),
+        NewDepth,
         D->getPosition(), D->getIdentifier(), T, DI, ExpandedParameterPackTypes,
         ExpandedParameterPackTypesAsWritten);
   else
     Param = NonTypeTemplateParmDecl::Create(
         SemaRef.Context, Owner, D->getInnerLocStart(), D->getLocation(),
-        D->getDepth() - TemplateArgs.getNumSubstitutedLevels(),
+        NewDepth,
         D->getPosition(), D->getIdentifier(), T, D->isParameterPack(), DI);
 
   Param->setAccess(AS_public);
@@ -2413,17 +2432,26 @@ TemplateDeclInstantiator::VisitTemplateTemplateParmDecl(
       return nullptr;
   }
 
+  unsigned NewDepth = D->getDepth() - TemplateArgs.getNumSubstitutedLevels();
+  if (SemaRef.ExpandingExprAlias) {
+    if (auto* LSI = SemaRef.getCurGenericLambda()) {
+      assert(LSI->GLTemplateParameterList != nullptr &&
+        "GLTemplateParameterList is nullptr");
+      NewDepth = LSI->GLTemplateParameterList->getDepth() + 1;
+    }
+  }
+
   // Build the template template parameter.
   TemplateTemplateParmDecl *Param;
   if (IsExpandedParameterPack)
     Param = TemplateTemplateParmDecl::Create(
         SemaRef.Context, Owner, D->getLocation(),
-        D->getDepth() - TemplateArgs.getNumSubstitutedLevels(),
+        NewDepth,
         D->getPosition(), D->getIdentifier(), InstParams, ExpandedParams);
   else
     Param = TemplateTemplateParmDecl::Create(
         SemaRef.Context, Owner, D->getLocation(),
-        D->getDepth() - TemplateArgs.getNumSubstitutedLevels(),
+        NewDepth,
         D->getPosition(), D->isParameterPack(), D->getIdentifier(), InstParams);
   if (D->hasDefaultArgument() && !D->defaultArgumentWasInherited()) {
     NestedNameSpecifierLoc QualifierLoc =
