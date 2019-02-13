@@ -4643,7 +4643,8 @@ public:
                         Scope *S, Scope *BodyScope, AccessSpecifier AS,
                         SourceLocation UsingLoc,
                         unsigned TemplateDepth,
-                        Declarator &ParametricExpressionDeclarator);
+                        Declarator &ParametricExpressionDeclarator,
+                        bool IsPackOp = false);
   bool CheckParametricExpressionParams(
                         Scope *BodyScope, bool &NeedsRAII,
                         ParametricExpressionDecl *New,
@@ -4665,6 +4666,9 @@ public:
                         ArrayRef<ParmVarDecl*> Params);
   ParmVarDecl *BuildParametricExpressionParam(
                         ParmVarDecl *OldParam, Expr *ArgExpr);
+
+  ExprResult ActOnPackOpExpr(SourceLocation TildeLoc, Expr* LHS,
+                             bool HasTrailingLParen);
 
   /// BuildCXXConstructExpr - Creates a complete call to a constructor,
   /// including handling of its default argument expressions.
