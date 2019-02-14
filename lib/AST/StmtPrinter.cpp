@@ -2760,6 +2760,11 @@ void StmtPrinter::VisitResolvedUnexpandedPackExpr(
   // TODO
 }
 
+void StmtPrinter::VisitDependentPackOpExpr(
+                                        DependentPackOpExpr *Node) {
+  // TODO
+}
+
 //===----------------------------------------------------------------------===//
 // Stmt method implementations
 //===----------------------------------------------------------------------===//

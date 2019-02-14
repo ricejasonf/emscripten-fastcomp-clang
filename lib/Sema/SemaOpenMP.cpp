@@ -9996,6 +9996,7 @@ static bool ActOnOMPReductionKindClause(
   case OO_Subscript:
   case OO_Conditional:
   case OO_Coawait:
+  case OO_PostfixTilde:
   case NUM_OVERLOADED_OPERATORS:
     llvm_unreachable("Unexpected reduction identifier");
   case OO_None:

@@ -2555,6 +2555,7 @@ DEF_TRAVERSE_STMT(ParametricExpressionIdExpr, {})
 DEF_TRAVERSE_STMT(ParametricExpressionCallExpr, {})
 DEF_TRAVERSE_STMT(DependentParametricExpressionCallExpr, {})
 DEF_TRAVERSE_STMT(ResolvedUnexpandedPackExpr, {})
+DEF_TRAVERSE_STMT(DependentPackOpExpr, {})
 
 // For coroutines expressions, traverse either the operand
 // as written or the implied calls, depending on what the

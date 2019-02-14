@@ -4418,7 +4418,7 @@ class ParametricExpressionIdExpr : public Expr {
   ParametricExpressionIdExpr(SourceLocation BL, QualType QT,
                              ParametricExpressionDecl *D,
                              Expr* Base = nullptr,
-                             IsPackOpAnnotated = false)
+                             bool IsPackOpAnnotated = false)
     : Expr(ParametricExpressionIdExprClass, QT, VK_RValue, OK_Ordinary,
            false, false, false, false),
       BeginLoc(BL),
@@ -4442,7 +4442,10 @@ public:
   }  
 
   // Iterators
-  child_range children() { return child_range(&BaseExpr, &BaseExpr + 1); }
+  child_range children() {
+    return child_range(reinterpret_cast<Stmt**>(&BaseExpr), 
+                       reinterpret_cast<Stmt**>(&BaseExpr) + 1);
+  }
 
   SourceLocation getBeginLoc() const LLVM_READONLY { return BeginLoc; }
   SourceLocation getEndLoc() const LLVM_READONLY { return BeginLoc; }
@@ -4471,7 +4474,7 @@ public:
                                         ParametricExpressionDecl *D,
                                         Expr* BaseExpr,
                                         Expr** Args, unsigned NumArgs,
-                                        bool Returnspack)
+                                        bool ReturnsPack)
     : Expr(DependentParametricExpressionCallExprClass, QT, VK_RValue,
            OK_Ordinary, /*TypeDependent*/ true, /*ValueDependent*/ false,
            /*InstantiationDependent*/ false, /*ContainsPack*/ ReturnsPack),
@@ -4655,7 +4658,7 @@ class DependentPackOpExpr : public Expr {
   bool HasTrailingLParen;
 
   DependentPackOpExpr(Expr *E, SourceLocation TL, bool HasTrailingLParen)
-    : Expr(DependnetPackOpExprClass, E->getType(), E->getValueKind(), OK_Ordinary,
+    : Expr(DependentPackOpExprClass, E->getType(), E->getValueKind(), OK_Ordinary,
            E->isTypeDependent(), E->isValueDependent(),
            E->isInstantiationDependent(),
            /*ContainsExpandedParameterPack=*/true),
@@ -4664,10 +4667,11 @@ class DependentPackOpExpr : public Expr {
       HasTrailingLParen(HasTrailingLParen) {}
 
 public:
-  static DependentPackOpExpr *Create(ASTContext* C, SubExpr *S,
-                                     SourceLocation TLoc);
+  static DependentPackOpExpr *Create(ASTContext& C, Expr *SubExpr,
+                                     SourceLocation TLoc,
+                                     bool HasTrailingLParen);
 
-  SourceLocation *getSubExpr() { return SubExpr; }
+  Expr *getSubExpr() { return SubExpr; }
   SourceLocation getTildeLoc() const { return TildeLoc; }
 
   // It may resolve to a parametric expression call
@@ -4678,10 +4682,17 @@ public:
   }
     
   // Iterators
-  child_range children() { return child_range(&SubExpr, &SubExpr + 1); }
+  child_range children() {
+    return child_range(reinterpret_cast<Stmt**>(&SubExpr), 
+                       reinterpret_cast<Stmt**>(&SubExpr) + 1);
+  }
 
-  SourceLocation getBeginLoc() const LLVM_READONLY { return E->getBeginLoc(); }
-  SourceLocation getEndLoc() const LLVM_READONLY { return E->getEndLoc(); }
+  SourceLocation getBeginLoc() const LLVM_READONLY {
+    return SubExpr->getBeginLoc();
+  }
+  SourceLocation getEndLoc() const LLVM_READONLY {
+    return SubExpr->getEndLoc();
+  }
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == DependentPackOpExprClass;

@@ -2199,6 +2199,7 @@ CXXNameMangler::mangleOperatorName(OverloadedOperatorKind OO, unsigned Arity) {
   //              ::= ss        # <=>
   case OO_Spaceship: Out << "ss"; break;
 
+  case OO_PostfixTilde: // special case
   case OO_None:
   case NUM_OVERLOADED_OPERATORS:
     llvm_unreachable("Not an overloaded operator");
@@ -3437,6 +3438,8 @@ recurse:
   case Expr::OMPArraySectionExprClass:
   case Expr::CXXInheritedCtorInitExprClass:
   case Expr::ParametricExpressionIdExprClass:
+  case Expr::DependentParametricExpressionCallExprClass:
+  case Expr::DependentPackOpExprClass:
     llvm_unreachable("unexpected statement kind");
 
   // FIXME: invent manglings for all these.
@@ -3473,7 +3476,6 @@ recurse:
   case Expr::PseudoObjectExprClass:
   case Expr::AtomicExprClass:
   case Expr::ParametricExpressionCallExprClass:
-  case Expr::DependentParametricExpressionCallExprClass:
   case Expr::ResolvedUnexpandedPackExprClass:
   {
     if (!NullOut) {

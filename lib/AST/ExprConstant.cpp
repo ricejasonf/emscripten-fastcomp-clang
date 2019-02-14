@@ -10355,6 +10355,7 @@ static ICEDiag CheckICE(const Expr* E, const ASTContext &Ctx) {
   case Expr::ParametricExpressionCallExprClass:
   case Expr::DependentParametricExpressionCallExprClass:
   case Expr::ResolvedUnexpandedPackExprClass:
+  case Expr::DependentPackOpExprClass:
     return ICEDiag(IK_NotICE, E->getLocStart());
 
   case Expr::InitListExprClass: {

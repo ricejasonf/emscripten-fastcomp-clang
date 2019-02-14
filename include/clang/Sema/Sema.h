@@ -6589,8 +6589,11 @@ public:
     /// \brief Lambda expression.
     UPPC_Lambda,
 
-    /// \brief Block expression,
-    UPPC_Block
+    /// Block expression,
+    UPPC_Block,
+
+    /// Unary pack expression
+    UPP_PackOp
   };
 
   /// \brief Diagnose unexpanded parameter packs.
