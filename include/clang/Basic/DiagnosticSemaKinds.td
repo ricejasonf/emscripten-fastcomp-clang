@@ -9353,7 +9353,7 @@ def note_shadow_field : Note<"declared here">;
 // pack operation via postfix tilde
 def err_pack_op_on_pack: Error<
   "Pack operation not allowed on parameter pack">;
-def err_parametric_expression_postfix_tilde_not_call; Error<
+def err_parametric_expression_postfix_tilde_not_call: Error<
   "A postfix tilde on a parametric expression name must be "
   "part of a call">;
 } // end of sema component.
