@@ -3266,8 +3266,10 @@ public:
                                                ParametricExpressionDecl *D,
                                                Expr *BaseExpr,
                                                MultiExprArg CallArgs,
-                                               SourceLocation Loc) {
-    return SemaRef.ActOnParametricExpressionCallExpr(D, BaseExpr, CallArgs, Loc);
+                                               SourceLocation Loc,
+                                               bool ReturnsPack) {
+    return SemaRef.ActOnParametricExpressionCallExpr(D, BaseExpr, CallArgs,
+                                                     Loc, ReturnsPack);
   }
 
   // Build a new call to a parametric expression
@@ -12898,7 +12900,8 @@ TreeTransform<Derived>::TransformDependentParametricExpressionCallExpr(
                                                           NewDecl,
                                                           BaseExprResult.get(),
                                                           Args,
-                                                          E->getBeginLoc());
+                                                          E->getBeginLoc(),
+                                                          E->getReturnsPack());
 }
 
 template<typename Derived>
@@ -12962,8 +12965,17 @@ TreeTransform<Derived>::TransformDependentPackOpExpr(
     return E;
   }
 
-  return SemaRef.ActOnPackOpExpr(E->getTildeLoc(), Result.get(),
-                                 E->hasTrailingLParen());
+  if (isa<ResolvedUnexpandedPackExpr>(Result.get())) {
+    return Result.get();
+  }
+  switch (Result.get()->getStmtClass()) {
+    case Stmt::ResolvedUnexpandedPackExprClass:
+    case Stmt::DependentPackOpExprClass:
+      return Result.get();
+    default:
+      return SemaRef.ActOnPackOpExpr(E->getTildeLoc(), Result.get(),
+                                     E->hasTrailingLParen());
+  }
 }
 
 

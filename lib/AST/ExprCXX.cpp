@@ -1507,6 +1507,12 @@ bool ParametricExpressionCallExpr::hasDependentArgs(ArrayRef<Expr *> Args) {
 ResolvedUnexpandedPackExpr *
 ResolvedUnexpandedPackExpr::Create(ASTContext &C, SourceLocation BL,
                                    QualType T, ArrayRef<Expr*> Exprs) {
+#ifndef NDEBUG
+  for (auto *E : Exprs)
+    assert(!E->containsUnexpandedParameterPack() &&
+           "Pack of packs are not allowed");
+#endif
+
   ResolvedUnexpandedPackExpr *
   New = new (C) ResolvedUnexpandedPackExpr(BL, T);
 

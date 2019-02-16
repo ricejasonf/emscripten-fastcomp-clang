@@ -7775,7 +7775,8 @@ ExprResult Sema::ActOnParametricExpressionCallExpr(
   }
 
   return ActOnParametricExpressionCallExpr(D, BaseExpr, CallArgExprs,
-                                           LParenLoc);
+                                           LParenLoc,
+                                           Id->isPackOpAnnotated());
 }
 
 ExprResult Sema::ActOnParametricExpressionCallExpr(ParametricExpressionDecl* D,
@@ -7802,14 +7803,9 @@ ExprResult Sema::ActOnParametricExpressionCallExpr(ParametricExpressionDecl* D,
                                                         BaseExpr,
                                                         CallArgExprs,
                                                         ReturnsPack);
-    if (ReturnsPack && Dep.isUsable() &&
-        Dep.get()->containsUnexpandedParameterPack()) {
-      // Pack op may not have operand containing unexpanded pack
-      DiagnoseUnexpandedParameterPacks(Body->getBeginLoc(),
-                                       UPPC_PackOp);
-      return ExprError();
+    if (ReturnsPack && Dep.isUsable()) {
+      return ActOnPackOpExpr(Loc, Dep.get(), /*HasTrailingLParen=*/true);
     }
-
     return Dep;
   }
 
@@ -7897,8 +7893,13 @@ ExprResult Sema::ActOnParametricExpressionCallExpr(ParametricExpressionDecl* D,
                                              NewParmVarDecls);
   } else {
     Expr *OutputExpr = cast<Expr>(Output);
-    if (OutputExpr->containsUnexpandedParameterPack())
+    // Raw transformation with no AST wrapper
+
+    if (ReturnsPack) {
+      assert(OutputExpr->containsUnexpandedParameterPack() &&
+        "parametric expression does not return pack but a pack was found");
       return BuildResolvedUnexpandedPackExpr(Loc, OutputExpr, TemplateArgs);
+    }
     // Raw transformation with no AST wrapper
     return SubstExpr(OutputExpr, TemplateArgs);
   }
@@ -8004,13 +8005,20 @@ ExprResult Sema::BuildResolvedUnexpandedPackExpr(
   // Fake the PackExpansionExpr funk
   Expr *Expansion = new (Context) PackExpansionExpr(Context.DependentTy,
                                                     Pattern,
-                                                    SourceLocation(), 
+                                                    Pattern->getBeginLoc(), 
                                                     None);
   SmallVector<Expr*, 12> ResultExprs;
   if (SubstExprs(ArrayRef<Expr*>(&Expansion, &Expansion + 1),
                  /*IsCall=*/false, TemplateArgs,
                  ResultExprs))
     return ExprError();
+
+#ifndef NDEBUG
+  for (auto *RE : ResultExprs) {
+    assert(!RE->containsUnexpandedParameterPack() &&
+           "Resolved unexpanded pack not actually resolved");
+  }
+#endif
 
   TemplateTypeParmDecl *DummyTemplateParam =
       TemplateTypeParmDecl::Create(
@@ -8028,11 +8036,7 @@ ExprResult Sema::BuildResolvedUnexpandedPackExpr(
 
 ExprResult Sema::ActOnPackOpExpr(SourceLocation TildeLoc, Expr* SubExpr,
                                  bool HasTrailingLParen) {
-  // TODO check CXXScopeSpec
-
-  if (SubExpr->containsUnexpandedParameterPack()) {
-    DiagnoseUnexpandedParameterPacks(TildeLoc,
-                                     UPPC_PackOp);
+  if (DiagnoseUnexpandedParameterPack(SubExpr, UPPC_PackOp)) {
     return ExprError();
   }
 
@@ -8048,7 +8052,10 @@ ExprResult Sema::ActOnPackOpExpr(SourceLocation TildeLoc, Expr* SubExpr,
     return Id;
   } 
 
-  if (SubExpr->isTypeDependent()) {
+  // Check all dependence factors that parametric expressions use
+  if (SubExpr->isTypeDependent() ||
+      SubExpr->isValueDependent() ||
+      SubExpr->isInstantiationDependent()) {
     return DependentPackOpExpr::Create(Context, SubExpr, TildeLoc,
                                        HasTrailingLParen);
   }
@@ -8071,8 +8078,11 @@ ExprResult Sema::ActOnPackOpExpr(SourceLocation TildeLoc, Expr* SubExpr,
 
   if (!D) {
     // Lookup handles the diagnostics
+    Diag(TildeLoc, diag::err_no_member_pack_operator)
+      << Record;
     return ExprError();
   }
 
-  return ActOnParametricExpressionCallExpr(D, SubExpr, {}, TildeLoc);
+  return ActOnParametricExpressionCallExpr(D, SubExpr, {}, TildeLoc,
+                                         /*ReturnsPack=*/true);
 }

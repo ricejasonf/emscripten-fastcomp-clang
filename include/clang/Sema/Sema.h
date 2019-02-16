@@ -220,8 +220,9 @@ namespace threadSafety {
 
 // FIXME: No way to easily map from TemplateTypeParmTypes to
 // TemplateTypeParmDecls, so we have this horrible PointerUnion.
-typedef std::pair<llvm::PointerUnion3<const TemplateTypeParmType*, NamedDecl*,
-                                      ResolvedUnexpandedPackExpr*>,
+typedef std::pair<llvm::PointerUnion4<const TemplateTypeParmType*, NamedDecl*,
+                                      ResolvedUnexpandedPackExpr*,
+                                      DependentPackOpExpr*>,
                   SourceLocation> UnexpandedParameterPack;
 
 /// Describes whether we've seen any nullability information for the given
@@ -6593,7 +6594,7 @@ public:
     UPPC_Block,
 
     /// Unary pack expression
-    UPP_PackOp
+    UPPC_PackOp
   };
 
   /// \brief Diagnose unexpanded parameter packs.

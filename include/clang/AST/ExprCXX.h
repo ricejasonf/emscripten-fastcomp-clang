@@ -4441,6 +4441,10 @@ public:
     IsPackOpAnnotated = Value;
   }  
 
+  bool isPackOpAnnotated() {
+    return IsPackOpAnnotated;
+  }
+
   // Iterators
   child_range children() {
     return child_range(reinterpret_cast<Stmt**>(&BaseExpr), 
@@ -4461,6 +4465,10 @@ public:
 //                                - A call a parametric expression that
 //                                  contains dependent arguments
 //
+//                                  If it returns a pack it will be wrapped
+//                                  in a DependentPackOp so ReturnsPack 
+//                                  ContainsPack is false in this case
+//
 class DependentParametricExpressionCallExpr : public Expr {
   SourceLocation BeginLoc;
   ParametricExpressionDecl *TheDecl;
@@ -4477,7 +4485,7 @@ public:
                                         bool ReturnsPack)
     : Expr(DependentParametricExpressionCallExprClass, QT, VK_RValue,
            OK_Ordinary, /*TypeDependent*/ true, /*ValueDependent*/ false,
-           /*InstantiationDependent*/ false, /*ContainsPack*/ ReturnsPack),
+           /*InstantiationDependent*/ false, /*ContainsPack*/ false),
       BeginLoc(BL),
       TheDecl(D),
       BaseExpr(BaseExpr),
@@ -4646,13 +4654,13 @@ public:
 //                       ResolvedPackExpr
 //
 //                       This can be via a named parametric expression call or
-//                       a member operator `operator~~`
+//                       a member operator `operator()~`
 //                       e.g. foo~()
 //                            obj~
 //
 class DependentPackOpExpr : public Expr {
   // SubExpr - LHS which may be a parametric expression id or
-  //           an object implementing `operator~~` (postfix tilde)
+  //           an object implementing `operator()~` (postfix tilde)
   Expr *SubExpr;
   SourceLocation TildeLoc;
   bool HasTrailingLParen;
