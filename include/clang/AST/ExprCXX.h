@@ -4473,15 +4473,16 @@ class DependentParametricExpressionCallExpr : public Expr {
   SourceLocation BeginLoc;
   ParametricExpressionDecl *TheDecl;
   Expr *BaseExpr;
-  Expr **CallArgs;
+  Stmt **Children; // BaseExpr + CallArgs
   unsigned NumArgs;
   bool ReturnsPack;
 
-public:
+  friend ParametricExpressionCallExpr;
+
   DependentParametricExpressionCallExpr(SourceLocation BL, QualType QT,
                                         ParametricExpressionDecl *D,
                                         Expr* BaseExpr,
-                                        Expr** Args, unsigned NumArgs,
+                                        Stmt** Children, unsigned NumArgs,
                                         bool ReturnsPack)
     : Expr(DependentParametricExpressionCallExprClass, QT, VK_RValue,
            OK_Ordinary, /*TypeDependent*/ true, /*ValueDependent*/ false,
@@ -4489,10 +4490,11 @@ public:
       BeginLoc(BL),
       TheDecl(D),
       BaseExpr(BaseExpr),
-      CallArgs(Args),
+      Children(Children),
       NumArgs(NumArgs),
       ReturnsPack(ReturnsPack) {}
 
+public:
   ParametricExpressionDecl *getDecl() const {
     return TheDecl;
   }
@@ -4502,7 +4504,10 @@ public:
   }
 
   Expr **getArgs() {
-    return CallArgs;
+    if (BaseExpr)
+      return reinterpret_cast<Expr**>(Children) + 1;
+    else
+      return reinterpret_cast<Expr**>(Children);
   }
 
   unsigned getNumArgs() const { return NumArgs; }
@@ -4512,10 +4517,9 @@ public:
   // Iterators
   child_range children() {
     if (BaseExpr)
-      return child_range(reinterpret_cast<Stmt**>(&BaseExpr),
-                         reinterpret_cast<Stmt**>(&BaseExpr) + NumArgs + 1);
-    return child_range(reinterpret_cast<Stmt**>(CallArgs),
-                       reinterpret_cast<Stmt**>(CallArgs) + NumArgs);
+      return child_range(Children, Children + NumArgs + 1);
+    else
+      return child_range(Children, Children + NumArgs);
   }
 
   SourceLocation getBeginLoc() const LLVM_READONLY { return BeginLoc; }
