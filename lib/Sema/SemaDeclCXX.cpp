@@ -10279,7 +10279,7 @@ Decl *Sema::ActOnFinishParametricExpressionDecl(
 
   if (NeedsRAII && New->isPackOp()) {
     // pack op must be a "transparent" transformation
-    Diag(New->getBeginLoc(),
+    Diag(New->getLocStart(),
          diag::err_parametric_expression_pack_op_transparent);
   } else if (!NeedsRAII && !New->isPackOp() &&
       static_cast<Expr*>(Body)->containsUnexpandedParameterPack()) {
@@ -10288,7 +10288,7 @@ Decl *Sema::ActOnFinishParametricExpressionDecl(
                                      UPPC_Expression);
   } else if (New->isPackOp() &&
       !static_cast<Expr*>(Body)->containsUnexpandedParameterPack()) {
-    Diag(Body->getBeginLoc(),
+    Diag(Body->getLocStart(),
          diag::err_parametric_expression_must_return_pack);
   }
 

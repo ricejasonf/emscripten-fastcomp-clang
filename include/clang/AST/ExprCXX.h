@@ -4701,11 +4701,13 @@ public:
   }
 
   SourceLocation getBeginLoc() const LLVM_READONLY {
-    return SubExpr->getBeginLoc();
+    return SubExpr->getLocStart();
   }
   SourceLocation getEndLoc() const LLVM_READONLY {
-    return SubExpr->getEndLoc();
+    return SubExpr->getLocEnd();
   }
+  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == DependentPackOpExprClass;
